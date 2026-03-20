@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Roland DG Brasil Flow</title>
+  <title>Roland DG Brasil Flow Premium</title>
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
@@ -19,9 +19,10 @@
             <small>Solicitações, aprovação e importação em um só lugar.</small>
           </div>
         </div>
-        <p>Um app com visual moderno, protegido por senha, com trilha de aprovação, decisão final da importação e um painel dedicado para TI administrar acessos.</p>
+        <p>Versão premium do app, com visual refinado, decisão por modais, histórico em timeline e painel TI para administração de acessos.</p>
         <div class="chips">
           <div class="chip">Fluxo interativo</div>
+          <div class="chip">Modais premium</div>
           <div class="chip">Aprovação por perfil</div>
           <div class="chip">TI Admin</div>
           <div class="chip">Rastreabilidade</div>
@@ -38,7 +39,10 @@
           </div>
           <div class="field full">
             <label>Senha</label>
-            <input id="password" type="password" required placeholder="••••••••">
+            <div class="pwd-wrap">
+              <input id="password" type="password" required placeholder="••••••••">
+              <button id="togglePwd" class="pwd-toggle" type="button">Mostrar</button>
+            </div>
           </div>
           <div class="actions">
             <button class="btn-primary" type="submit">Acessar sistema</button>
@@ -61,8 +65,8 @@
       <div class="brand">
         <div class="brand-badge">R</div>
         <div>
-          <h1>Roland DG Brasil Flow</h1>
-          <small>Compras e importação</small>
+          <h1 style="font-size:22px;margin:0">Roland DG Brasil Flow</h1>
+          <small>Versão premium</small>
         </div>
       </div>
 
@@ -77,22 +81,30 @@
     </aside>
 
     <main class="main">
-      <div class="topbar">
-        <div class="hero">
-          <h2 id="heroTitle">Bem-vindo</h2>
-          <p id="heroSubtitle">Painel principal.</p>
-          <div class="grid-cards">
-            <div class="stat-card"><div class="k">Total</div><div class="v" id="statTotal">0</div></div>
-            <div class="stat-card"><div class="k">Pendentes</div><div class="v" id="statPendentes">0</div></div>
-            <div class="stat-card"><div class="k">Aprovadas</div><div class="v" id="statAprovadas">0</div></div>
-            <div class="stat-card"><div class="k">Reprovadas</div><div class="v" id="statReprovadas">0</div></div>
-          </div>
+      <div class="hero">
+        <h2 id="heroTitle">Bem-vindo</h2>
+        <p id="heroSubtitle">Painel principal.</p>
+        <div class="grid-cards">
+          <div class="stat-card"><div class="k">Total</div><div class="v" id="statTotal">0</div></div>
+          <div class="stat-card"><div class="k">Pendentes</div><div class="v" id="statPendentes">0</div></div>
+          <div class="stat-card"><div class="k">Aprovadas</div><div class="v" id="statAprovadas">0</div></div>
+          <div class="stat-card"><div class="k">Reprovadas</div><div class="v" id="statReprovadas">0</div></div>
         </div>
       </div>
-
       <section id="viewContainer" class="view"></section>
     </main>
   </section>
+
+  <div id="modalBackdrop" class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modalTitle" style="margin:0"></h3>
+        <button class="modal-close" onclick="closeModal()">Fechar</button>
+      </div>
+      <div id="modalBody" class="modal-body"></div>
+      <div id="modalFooter" class="modal-body" style="padding-top:0;display:flex;gap:10px;justify-content:flex-end"></div>
+    </div>
+  </div>
 
   <script src="/app.js"></script>
 </body>

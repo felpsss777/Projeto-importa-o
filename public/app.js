@@ -4,7 +4,8 @@ const state = {
   users: [],
   currentView: "dashboard",
   filterStatus: "",
-  searchText: ""
+  searchText: "",
+  modalOpen: false
 };
 
 const roleText = {
@@ -14,23 +15,32 @@ const roleText = {
   ti: "TI Admin"
 };
 
-const el = (id) => document.getElementById(id);
+const $ = (id) => document.getElementById(id);
 
 function badgeClass(status = "") {
+  if (status.includes("Aprovado parcialmente")) return "orange";
   if (status.includes("Aprovado")) return "green";
-  if (status.includes("Crítica")) return "red";
   if (status.includes("Reprovado")) return "red";
   if (status.includes("Devolvido")) return "orange";
   if (status.includes("Em análise")) return "blue";
   return "gray";
 }
 
+function statusIcon(status = "") {
+  if (status.includes("Aprovado parcialmente")) return "🟠";
+  if (status.includes("Aprovado")) return "🟢";
+  if (status.includes("Reprovado")) return "🔴";
+  if (status.includes("Devolvido")) return "🟡";
+  if (status.includes("Em análise")) return "🔵";
+  return "⚪";
+}
+
 function toast(msg, ok = true) {
-  const box = el("toast");
+  const box = $("toast");
   box.textContent = msg;
   box.style.background = ok ? "#152738" : "#7a1f2a";
   box.classList.add("show");
-  setTimeout(() => box.classList.remove("show"), 2500);
+  setTimeout(() => box.classList.remove("show"), 2600);
 }
 
 async function api(url, options = {}) {
@@ -38,15 +48,13 @@ async function api(url, options = {}) {
     headers: { "Content-Type": "application/json" },
     ...options
   });
-
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || "Erro inesperado.");
   return data;
 }
 
 function formatDate(date) {
-  if (!date) return "-";
-  return new Date(date).toLocaleString("pt-BR");
+  return date ? new Date(date).toLocaleString("pt-BR") : "-";
 }
 
 function statusCounts(list) {
@@ -59,69 +67,42 @@ function statusCounts(list) {
 }
 
 function renderLogin() {
-  el("loginView").classList.remove("hidden");
-  el("appView").classList.add("hidden");
+  $("loginView").classList.remove("hidden");
+  $("appView").classList.add("hidden");
 }
 
-function renderAppShell() {
-  el("loginView").classList.add("hidden");
-  el("appView").classList.remove("hidden");
+function mountNav() {
+  const items = [{ key: "dashboard", label: "Dashboard" }];
+  if (state.user.role === "requester") items.push({ key: "new", label: "Nova solicitação" });
+  items.push({ key: "requests", label: "Solicitações" });
+  if (state.user.role === "ti") items.push({ key: "users", label: "Painel TI" });
 
-  el("sidebarUserName").textContent = state.user.name;
-  el("sidebarUserRole").textContent = `${roleText[state.user.role]} • ${state.user.team || "Sem equipe"}`;
-  el("heroTitle").textContent = `Bem-vindo, ${state.user.name.split(" ")[0]}`;
-  el("heroSubtitle").textContent =
-    state.user.role === "requester"
-      ? "Abra pedidos com rapidez, acompanhe status e histórico em um fluxo elegante."
-      : state.user.role === "approver"
-      ? "Revise pedidos da sua equipe em uma aba de aprovação clara, dinâmica e segura."
-      : state.user.role === "import"
-      ? "Dê a cartada final, ajuste quantidades e registre a decisão da importação com total rastreabilidade."
-      : "Gerencie acessos, redefina senhas e acompanhe a saúde operacional do app.";
-
-  document.querySelectorAll(".nav-btn").forEach(btn => btn.classList.remove("active"));
-  const nav = document.querySelector(`.nav-btn[data-view="${state.currentView}"]`);
-  if (nav) nav.classList.add("active");
-
-  renderStats();
-  renderView();
+  $("navArea").innerHTML = items.map(item =>
+    `<button class="nav-btn ${state.currentView === item.key ? "active" : ""}" onclick="changeView('${item.key}')">${item.label}</button>`
+  ).join("");
 }
 
 function renderStats() {
   const c = statusCounts(state.requests);
-  el("statTotal").textContent = c.total;
-  el("statPendentes").textContent = c.pendentes;
-  el("statAprovadas").textContent = c.aprovadas;
-  el("statReprovadas").textContent = c.reprovadas;
+  $("statTotal").textContent = c.total;
+  $("statPendentes").textContent = c.pendentes;
+  $("statAprovadas").textContent = c.aprovadas;
+  $("statReprovadas").textContent = c.reprovadas;
 }
 
 function filteredRequests() {
   return state.requests.filter(item => {
     const okStatus = !state.filterStatus || item.status === state.filterStatus;
-    const text = `${item.title} ${item.productCode} ${item.requesterName}`.toLowerCase();
+    const text = `${item.title} ${item.productCode || ""} ${item.requesterName || ""}`.toLowerCase();
     const okText = !state.searchText || text.includes(state.searchText.toLowerCase());
     return okStatus && okText;
   });
 }
 
-function navItems() {
-  const base = [{ key: "dashboard", label: "Dashboard" }];
-  if (state.user.role === "requester") base.push({ key: "new", label: "Nova solicitação" });
-  if (["requester", "approver", "import", "ti"].includes(state.user.role)) base.push({ key: "requests", label: "Solicitações" });
-  if (state.user.role === "ti") base.push({ key: "users", label: "Painel TI" });
-  return base;
-}
-
-function mountNav() {
-  el("navArea").innerHTML = navItems().map(item => (
-    `<button class="nav-btn ${state.currentView === item.key ? "active":""}" data-view="${item.key}" onclick="changeView('${item.key}')">${item.label}</button>`
-  )).join("");
-}
-
 function requestCard(item) {
   const canApprove = state.user.role === "approver" && item.status === "Pendente aprovação";
-  const canImport = state.user.role === "import" && ["Aprovado pelo gestor","Em análise importação","Aprovado parcialmente"].includes(item.status);
-  const timeline = (item.history || []).slice(0, 4).map(h => `
+  const canImport = state.user.role === "import" && ["Aprovado pelo gestor", "Em análise importação", "Aprovado parcialmente"].includes(item.status);
+  const timeline = (item.history || []).slice(0, 3).map(h => `
     <div class="timeline-item">
       <strong>${h.action}</strong><br>
       <span class="small muted">${h.by} • ${h.role} • ${formatDate(h.at)}</span><br>
@@ -136,61 +117,84 @@ function requestCard(item) {
           <h4>${item.title}</h4>
           <div class="muted">Código ${item.productCode || "-"} • ${item.category || "-"} • Solicitante: ${item.requesterName}</div>
         </div>
-        <span class="badge ${badgeClass(item.status)}">${item.status}</span>
+        <span class="badge ${badgeClass(item.status)}">${statusIcon(item.status)} ${item.status}</span>
       </div>
       <p class="muted">${item.description || "Sem descrição."}</p>
-      <div class="form-grid">
-        <div><strong>Qtd. solicitada:</strong> ${item.quantityRequested}</div>
-        <div><strong>Qtd. final:</strong> ${item.quantityApproved ?? item.quantityRequested}</div>
-        <div><strong>Urgência:</strong> ${item.urgency}</div>
-        <div><strong>Data desejada:</strong> ${item.desiredDate || "-"}</div>
-        <div><strong>Gestor:</strong> ${item.approverName || "-"}</div>
-        <div><strong>Equipe:</strong> ${item.requesterTeam || "-"}</div>
+      <div class="request-meta">
+        <div class="meta-pill"><strong>Qtd. solicitada</strong><br>${item.quantityRequested}</div>
+        <div class="meta-pill"><strong>Qtd. final</strong><br>${item.quantityApproved ?? item.quantityRequested}</div>
+        <div class="meta-pill"><strong>Urgência</strong><br>${item.urgency}</div>
+        <div class="meta-pill"><strong>Data desejada</strong><br>${item.desiredDate || "-"}</div>
+        <div class="meta-pill"><strong>Gestor</strong><br>${item.approverName || "-"}</div>
+        <div class="meta-pill"><strong>Equipe</strong><br>${item.requesterTeam || "-"}</div>
       </div>
       <div class="actions">
-        <button class="btn-secondary" onclick="showHistory(${item.id})">Histórico</button>
-        ${canApprove ? `<button class="btn-success" onclick="managerAction(${item.id}, 'approve')">Aprovar</button>
-                        <button class="btn-warning" onclick="managerAction(${item.id}, 'return')">Devolver</button>
-                        <button class="btn-danger" onclick="managerAction(${item.id}, 'reject')">Reprovar</button>` : ""}
-        ${canImport ? `<button class="btn-primary" onclick="openImportPanel(${item.id})">Decisão da importação</button>` : ""}
+        <button class="btn-secondary" onclick="openHistoryModal(${item.id})">Histórico</button>
+        ${canApprove ? `<button class="btn-success" onclick="openManagerModal(${item.id}, 'approve')">Aprovar</button>
+                        <button class="btn-warning" onclick="openManagerModal(${item.id}, 'return')">Devolver</button>
+                        <button class="btn-danger" onclick="openManagerModal(${item.id}, 'reject')">Reprovar</button>` : ""}
+        ${canImport ? `<button class="btn-primary" onclick="openImportModal(${item.id})">Decisão da importação</button>` : ""}
       </div>
-      <div class="timeline">${timeline || '<span class="muted small">Sem histórico ainda.</span>'}</div>
+      <div class="timeline">${timeline || `<span class="muted small">Sem histórico ainda.</span>`}</div>
     </div>
   `;
 }
 
-function renderView() {
+function renderAppShell() {
+  $("loginView").classList.add("hidden");
+  $("appView").classList.remove("hidden");
+  $("sidebarUserName").textContent = state.user.name;
+  $("sidebarUserRole").textContent = `${roleText[state.user.role]} • ${state.user.team || "Sem equipe"}`;
+  $("heroTitle").textContent = `Bem-vindo, ${state.user.name.split(" ")[0]}`;
+  $("heroSubtitle").textContent =
+    state.user.role === "requester"
+      ? "Abra pedidos com rapidez e acompanhe um fluxo visual mais premium."
+      : state.user.role === "approver"
+      ? "Aprove, devolva ou reprove pedidos com uma experiência mais elegante."
+      : state.user.role === "import"
+      ? "Faça a decisão final da importação com ajuste de quantidade e rastreabilidade."
+      : "Gerencie acessos e mantenha o controle do ecossistema do app.";
+
   mountNav();
-  const view = el("viewContainer");
+  renderStats();
+  renderView();
+}
+
+function renderView() {
+  const view = $("viewContainer");
 
   if (state.currentView === "dashboard") {
     const recent = filteredRequests().slice(0, 4).map(requestCard).join("") || `<div class="panel"><p class="muted">Nenhuma solicitação disponível.</p></div>`;
     view.innerHTML = `
       <div class="split">
         <div class="panel">
-          <h3>Radar operacional</h3>
-          <p class="muted">Uma visão rápida do fluxo Roland DG Brasil Flow.</p>
-          <div class="card-list">${recent}</div>
+          <h3>Radar operacional premium</h3>
+          <div class="kpi-strip">
+            <div class="kpi"><strong>Fluxo real</strong><br><span class="muted">Solicitação → gestor → importação</span></div>
+            <div class="kpi"><strong>Segurança</strong><br><span class="muted">Acesso por perfil e senha</span></div>
+            <div class="kpi"><strong>Rastreio</strong><br><span class="muted">Timeline de ações por pedido</span></div>
+          </div>
+          <div class="card-list" style="margin-top:14px">${recent}</div>
         </div>
         <div class="panel">
-          <h3>Guia rápido do seu perfil</h3>
+          <h3>Guia rápido do perfil</h3>
           <div class="timeline">
             ${state.user.role === "requester" ? `
               <div class="timeline-item"><strong>1. Criar solicitação</strong><br><span>Preencha produto, quantidade, urgência e justificativa.</span></div>
-              <div class="timeline-item"><strong>2. Acompanhar aprovação</strong><br><span>Seu gestor revisa e devolve, aprova ou reprova.</span></div>
-              <div class="timeline-item"><strong>3. Importação finaliza</strong><br><span>As meninas da importação ajustam quantidade e decisão final.</span></div>
+              <div class="timeline-item"><strong>2. Acompanhar aprovação</strong><br><span>Seu gestor analisa e a importação decide no final.</span></div>
+              <div class="timeline-item"><strong>3. Consultar histórico</strong><br><span>Veja tudo o que aconteceu em cada pedido.</span></div>
             ` : state.user.role === "approver" ? `
-              <div class="timeline-item"><strong>1. Revisar pedidos da equipe</strong><br><span>Veja urgência, contexto e histórico.</span></div>
-              <div class="timeline-item"><strong>2. Tomar decisão</strong><br><span>Aprove, devolva para ajuste ou reprove.</span></div>
-              <div class="timeline-item"><strong>3. Encaminhar para importação</strong><br><span>Pedidos aprovados seguem para decisão master.</span></div>
+              <div class="timeline-item"><strong>1. Ler contexto</strong><br><span>Visualize dados completos antes da decisão.</span></div>
+              <div class="timeline-item"><strong>2. Agir com modal</strong><br><span>Aprovar, devolver ou reprovar com comentário.</span></div>
+              <div class="timeline-item"><strong>3. Encaminhar</strong><br><span>Pedidos aprovados seguem para a importação master.</span></div>
             ` : state.user.role === "import" ? `
-              <div class="timeline-item"><strong>1. Receber aprovado do gestor</strong><br><span>Os pedidos já chegam validados pela liderança.</span></div>
-              <div class="timeline-item"><strong>2. Ajustar quantidade</strong><br><span>Registre o que o Japão liberou.</span></div>
-              <div class="timeline-item"><strong>3. Finalizar</strong><br><span>Defina aprovado, parcial, reprovado ou concluído.</span></div>
+              <div class="timeline-item"><strong>1. Receber aprovados</strong><br><span>Os pedidos chegam validados pela liderança.</span></div>
+              <div class="timeline-item"><strong>2. Ajustar quantidade</strong><br><span>Registre o retorno do Japão com clareza.</span></div>
+              <div class="timeline-item"><strong>3. Fechar a decisão</strong><br><span>Defina parcial, aprovado, reprovado ou concluído.</span></div>
             ` : `
-              <div class="timeline-item"><strong>1. Controlar acessos</strong><br><span>Cadastre usuários e redefina senhas.</span></div>
-              <div class="timeline-item"><strong>2. Suporte contínuo</strong><br><span>Seu painel já está pronto para futuras melhorias.</span></div>
-              <div class="timeline-item"><strong>3. Evoluir o produto</strong><br><span>Esse é o ponto de partida para novas automações.</span></div>
+              <div class="timeline-item"><strong>1. Criar acessos</strong><br><span>Cadastre usuários por equipe e perfil.</span></div>
+              <div class="timeline-item"><strong>2. Alterar senhas</strong><br><span>Você controla suporte e administração.</span></div>
+              <div class="timeline-item"><strong>3. Evoluir o app</strong><br><span>Base pronta para novas funções futuras.</span></div>
             `}
           </div>
         </div>
@@ -203,16 +207,14 @@ function renderView() {
     view.innerHTML = `
       <div class="panel">
         <h3>Nova solicitação</h3>
-        <p class="muted">Abra um pedido com visual premium e fluxo real para aprovação.</p>
+        <p class="muted">Uma abertura de pedido com cara de produto premium.</p>
         <form id="requestForm" class="form-grid">
           <div class="field"><label>Nome do produto</label><input name="title" required></div>
           <div class="field"><label>Código do produto</label><input name="productCode"></div>
           <div class="field"><label>Categoria</label><input name="category"></div>
           <div class="field"><label>Quantidade</label><input name="quantityRequested" type="number" min="1" required></div>
           <div class="field"><label>Urgência</label>
-            <select name="urgency">
-              <option>Baixa</option><option>Média</option><option>Alta</option><option>Crítica</option>
-            </select>
+            <select name="urgency"><option>Baixa</option><option>Média</option><option>Alta</option><option>Crítica</option></select>
           </div>
           <div class="field"><label>Data desejada</label><input name="desiredDate" type="date"></div>
           <div class="field full"><label>Descrição</label><textarea name="description"></textarea></div>
@@ -224,7 +226,7 @@ function renderView() {
         </form>
       </div>
     `;
-    el("requestForm").addEventListener("submit", submitRequest);
+    $("requestForm").addEventListener("submit", submitRequest);
     return;
   }
 
@@ -234,24 +236,15 @@ function renderView() {
       <div class="panel">
         <h3>Solicitações</h3>
         <div class="search-row">
-          <input placeholder="Buscar por produto, código ou solicitante" oninput="state.searchText=this.value; renderView()">
+          <input placeholder="Buscar por produto, código ou solicitante" value="${state.searchText}" oninput="state.searchText=this.value; renderView()">
           <select onchange="state.filterStatus=this.value; renderView()">
             <option value="">Todos os status</option>
-            <option>Pendente aprovação</option>
-            <option>Devolvido para ajuste</option>
-            <option>Reprovado pelo gestor</option>
-            <option>Aprovado pelo gestor</option>
-            <option>Em análise importação</option>
-            <option>Aprovado parcialmente</option>
-            <option>Aprovado pela importação</option>
-            <option>Reprovado pela importação</option>
-            <option>Concluído</option>
+            ${["Pendente aprovação","Devolvido para ajuste","Reprovado pelo gestor","Aprovado pelo gestor","Em análise importação","Aprovado parcialmente","Aprovado pela importação","Reprovado pela importação","Concluído"]
+              .map(s => `<option ${state.filterStatus===s?'selected':''}>${s}</option>`).join("")}
           </select>
           <button class="btn-ghost" onclick="state.searchText='';state.filterStatus='';renderView()">Limpar filtros</button>
         </div>
-        <div class="card-list">
-          ${items.map(requestCard).join("") || `<div class="request-card"><span class="muted">Nenhuma solicitação encontrada.</span></div>`}
-        </div>
+        <div class="card-list">${items.map(requestCard).join("") || `<div class="request-card"><span class="muted">Nenhuma solicitação encontrada.</span></div>`}</div>
       </div>
     `;
     return;
@@ -264,19 +257,14 @@ function renderView() {
         <td>${u.email}</td>
         <td>${roleText[u.role] || u.role}</td>
         <td>${u.team || "-"}</td>
-        <td>
-          <div class="row-actions">
-            <button class="btn-secondary" onclick="resetPasswordPrompt(${u.id}, '${u.name.replace(/'/g, "\\'")}')">Alterar senha</button>
-          </div>
-        </td>
+        <td><div class="row-actions"><button class="btn-secondary" onclick="openPasswordModal(${u.id}, '${u.name.replace(/'/g, "\\'")}')">Alterar senha</button></div></td>
       </tr>
     `).join("");
-
     view.innerHTML = `
       <div class="split">
         <div class="panel">
           <h3>Painel TI</h3>
-          <p class="muted">Seu espaço para gerenciar acessos e preparar futuras melhorias.</p>
+          <p class="muted">Seu centro de administração de acessos.</p>
           <form id="userForm" class="form-grid">
             <div class="field"><label>Nome</label><input name="name" required></div>
             <div class="field"><label>E-mail</label><input name="email" type="email" required></div>
@@ -304,39 +292,159 @@ function renderView() {
         </div>
       </div>
     `;
-    el("userForm").addEventListener("submit", submitUser);
+    $("userForm").addEventListener("submit", submitUser);
     return;
   }
 
   view.innerHTML = `<div class="panel"><p class="muted">View indisponível para este perfil.</p></div>`;
 }
 
-async function refreshData() {
-  const [me, requests] = await Promise.all([
-    api("/api/me"),
-    api("/api/requests")
-  ]);
-  state.user = me.user;
-  state.requests = requests;
+function openModal(title, body, footer = "") {
+  state.modalOpen = true;
+  $("modalTitle").textContent = title;
+  $("modalBody").innerHTML = body;
+  $("modalFooter").innerHTML = footer;
+  $("modalBackdrop").classList.add("show");
+}
+function closeModal() {
+  state.modalOpen = false;
+  $("modalBackdrop").classList.remove("show");
+}
+function openHistoryModal(id) {
+  const item = state.requests.find(r => r.id === id);
+  if (!item) return;
+  const body = `
+    <div class="timeline">
+      ${(item.history || []).map(h => `
+        <div class="timeline-item">
+          <strong>${h.action}</strong><br>
+          <span class="small muted">${h.by} • ${h.role} • ${formatDate(h.at)}</span><br>
+          <span>${h.detail}</span>
+        </div>
+      `).join("") || `<span class="muted">Sem histórico.</span>`}
+    </div>
+  `;
+  openModal(`Histórico • ${item.title}`, body, `<button class="btn-secondary" onclick="closeModal()">Fechar</button>`);
+}
 
-  if (state.user.role === "ti") {
-    const users = await api("/api/users");
-    state.users = users;
-  } else {
-    state.users = [];
+function openManagerModal(id, action) {
+  const item = state.requests.find(r => r.id === id);
+  if (!item) return;
+  const actionLabel = action === "approve" ? "Aprovar" : action === "return" ? "Devolver" : "Reprovar";
+  const body = `
+    <div class="form-grid">
+      <div class="field full">
+        <label>Comentário da ação</label>
+        <textarea id="managerComment" placeholder="Descreva a decisão do gestor."></textarea>
+      </div>
+    </div>
+  `;
+  const footer = `
+    <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
+    <button class="${action==='approve'?'btn-success':action==='return'?'btn-warning':'btn-danger'}" onclick="submitManagerAction(${id}, '${action}')">${actionLabel}</button>
+  `;
+  openModal(`${actionLabel} solicitação`, body, footer);
+}
+
+async function submitManagerAction(id, action) {
+  const comment = $("managerComment").value || "";
+  try {
+    await api(`/api/requests/${id}/${action}`, { method: "PUT", body: JSON.stringify({ comment }) });
+    closeModal();
+    toast("Ação registrada.");
+    await refreshData();
+    renderAppShell();
+  } catch (err) {
+    toast(err.message, false);
+  }
+}
+
+function openImportModal(id) {
+  const item = state.requests.find(r => r.id === id);
+  if (!item) return;
+  const body = `
+    <div class="form-grid">
+      <div class="field">
+        <label>Quantidade final aprovada</label>
+        <input id="importQty" type="number" min="0" value="${item.quantityApproved ?? item.quantityRequested}">
+      </div>
+      <div class="field">
+        <label>Status final</label>
+        <select id="importStatus">
+          ${["Em análise importação","Aprovado parcialmente","Aprovado pela importação","Reprovado pela importação","Concluído"]
+            .map(s => `<option ${item.status===s?'selected':''}>${s}</option>`).join("")}
+        </select>
+      </div>
+      <div class="field full">
+        <label>Decisão / retorno do Japão</label>
+        <textarea id="importDecision">${item.importDecision || ""}</textarea>
+      </div>
+      <div class="field full">
+        <label>Comentário da importação</label>
+        <textarea id="importComment">${item.importComment || ""}</textarea>
+      </div>
+    </div>
+  `;
+  const footer = `
+    <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
+    <button class="btn-primary" onclick="submitImportAction(${id})">Salvar decisão</button>
+  `;
+  openModal(`Decisão da importação • ${item.title}`, body, footer);
+}
+
+async function submitImportAction(id) {
+  const payload = {
+    quantityApproved: Number($("importQty").value),
+    status: $("importStatus").value,
+    importDecision: $("importDecision").value,
+    comment: $("importComment").value
+  };
+  try {
+    await api(`/api/requests/${id}/import`, { method: "PUT", body: JSON.stringify(payload) });
+    closeModal();
+    toast("Decisão da importação salva.");
+    await refreshData();
+    renderAppShell();
+  } catch (err) {
+    toast(err.message, false);
+  }
+}
+
+function openPasswordModal(id, name) {
+  const body = `
+    <div class="form-grid">
+      <div class="field full">
+        <label>Nova senha para ${name}</label>
+        <input id="newPassword" type="password" placeholder="Digite a nova senha">
+      </div>
+    </div>
+  `;
+  const footer = `
+    <button class="btn-secondary" onclick="closeModal()">Cancelar</button>
+    <button class="btn-primary" onclick="submitPasswordChange(${id})">Salvar nova senha</button>
+  `;
+  openModal(`Alterar senha`, body, footer);
+}
+
+async function submitPasswordChange(id) {
+  try {
+    await api(`/api/users/${id}/password`, {
+      method: "PUT",
+      body: JSON.stringify({ password: $("newPassword").value })
+    });
+    closeModal();
+    toast("Senha alterada.");
+  } catch (err) {
+    toast(err.message, false);
   }
 }
 
 async function submitRequest(e) {
   e.preventDefault();
-  const form = new FormData(e.target);
-  const payload = Object.fromEntries(form.entries());
+  const payload = Object.fromEntries(new FormData(e.target).entries());
   payload.quantityRequested = Number(payload.quantityRequested);
   try {
-    await api("/api/requests", {
-      method: "POST",
-      body: JSON.stringify(payload)
-    });
+    await api("/api/requests", { method: "POST", body: JSON.stringify(payload) });
     toast("Solicitação criada com sucesso.");
     e.target.reset();
     state.currentView = "requests";
@@ -347,73 +455,11 @@ async function submitRequest(e) {
   }
 }
 
-async function managerAction(id, action) {
-  const comment = prompt(
-    action === "approve" ? "Comentário da aprovação:" :
-    action === "return" ? "Motivo da devolução:" :
-    "Motivo da reprovação:"
-  ) || "";
-  try {
-    await api(`/api/requests/${id}/${action}`, {
-      method: "PUT",
-      body: JSON.stringify({ comment })
-    });
-    toast("Ação registrada.");
-    await refreshData();
-    renderAppShell();
-  } catch (err) {
-    toast(err.message, false);
-  }
-}
-
-function openImportPanel(id) {
-  const item = state.requests.find(r => r.id === id);
-  if (!item) return;
-  const qty = prompt("Quantidade final aprovada pelo Japão:", item.quantityApproved ?? item.quantityRequested);
-  if (qty === null) return;
-  const status = prompt("Status final (Em análise importação, Aprovado parcialmente, Aprovado pela importação, Reprovado pela importação, Concluído):", item.status === "Aprovado pelo gestor" ? "Em análise importação" : item.status);
-  if (!status) return;
-  const importDecision = prompt("Decisão/retorno do Japão:", item.importDecision || "");
-  const comment = prompt("Comentário da importação:", item.importComment || "");
-  sendImportDecision(id, qty, status, importDecision, comment);
-}
-
-async function sendImportDecision(id, qty, status, importDecision, comment) {
-  try {
-    await api(`/api/requests/${id}/import`, {
-      method: "PUT",
-      body: JSON.stringify({
-        quantityApproved: Number(qty),
-        status,
-        importDecision,
-        comment
-      })
-    });
-    toast("Decisão da importação salva.");
-    await refreshData();
-    renderAppShell();
-  } catch (err) {
-    toast(err.message, false);
-  }
-}
-
-function showHistory(id) {
-  const item = state.requests.find(r => r.id === id);
-  if (!item) return;
-  const text = (item.history || []).map(h =>
-    `${new Date(h.at).toLocaleString("pt-BR")} • ${h.by} (${h.role})\n${h.action}\n${h.detail}`
-  ).join("\n\n");
-  alert(text || "Sem histórico.");
-}
-
 async function submitUser(e) {
   e.preventDefault();
   const payload = Object.fromEntries(new FormData(e.target).entries());
   try {
-    await api("/api/users", {
-      method: "POST",
-      body: JSON.stringify(payload)
-    });
+    await api("/api/users", { method: "POST", body: JSON.stringify(payload) });
     toast("Usuário criado.");
     e.target.reset();
     state.users = await api("/api/users");
@@ -423,33 +469,20 @@ async function submitUser(e) {
   }
 }
 
-async function resetPasswordPrompt(id, name) {
-  const password = prompt(`Nova senha para ${name}:`);
-  if (!password) return;
-  try {
-    await api(`/api/users/${id}/password`, {
-      method: "PUT",
-      body: JSON.stringify({ password })
-    });
-    toast("Senha alterada.");
-  } catch (err) {
-    toast(err.message, false);
-  }
-}
-
-function changeView(view) {
-  state.currentView = view;
-  renderAppShell();
+async function refreshData() {
+  const [me, requests] = await Promise.all([api("/api/me"), api("/api/requests")]);
+  state.user = me.user;
+  state.requests = requests;
+  if (state.user.role === "ti") state.users = await api("/api/users");
+  else state.users = [];
 }
 
 async function doLogin(e) {
   e.preventDefault();
   try {
-    const email = el("email").value.trim();
-    const password = el("password").value.trim();
     const data = await api("/api/login", {
       method: "POST",
-      body: JSON.stringify({ email, password })
+      body: JSON.stringify({ email: $("email").value.trim(), password: $("password").value.trim() })
     });
     state.user = data.user;
     state.currentView = "dashboard";
@@ -462,13 +495,20 @@ async function doLogin(e) {
 }
 
 async function doLogout() {
-  try {
-    await api("/api/logout", { method: "POST" });
-  } catch (_) {}
-  state.user = null;
-  state.requests = [];
-  state.users = [];
+  try { await api("/api/logout", { method: "POST" }); } catch (_) {}
+  state.user = null; state.requests = []; state.users = [];
   renderLogin();
+}
+
+function togglePassword() {
+  const input = $("password");
+  input.type = input.type === "password" ? "text" : "password";
+  $("togglePwd").textContent = input.type === "password" ? "Mostrar" : "Ocultar";
+}
+
+function changeView(view) {
+  state.currentView = view;
+  renderAppShell();
 }
 
 async function bootstrap() {
@@ -481,14 +521,24 @@ async function bootstrap() {
 }
 
 window.changeView = changeView;
-window.managerAction = managerAction;
-window.openImportPanel = openImportPanel;
-window.showHistory = showHistory;
-window.resetPasswordPrompt = resetPasswordPrompt;
+window.openManagerModal = openManagerModal;
+window.submitManagerAction = submitManagerAction;
+window.openImportModal = openImportModal;
+window.submitImportAction = submitImportAction;
+window.openHistoryModal = openHistoryModal;
+window.openPasswordModal = openPasswordModal;
+window.submitPasswordChange = submitPasswordChange;
+window.closeModal = closeModal;
+window.togglePassword = togglePassword;
 window.doLogout = doLogout;
 window.state = state;
+window.renderView = renderView;
 
 document.addEventListener("DOMContentLoaded", () => {
-  el("loginForm").addEventListener("submit", doLogin);
+  $("loginForm").addEventListener("submit", doLogin);
+  $("togglePwd").addEventListener("click", togglePassword);
+  $("modalBackdrop").addEventListener("click", (e) => {
+    if (e.target.id === "modalBackdrop") closeModal();
+  });
   bootstrap();
 });

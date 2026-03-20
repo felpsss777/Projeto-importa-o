@@ -1,7 +1,7 @@
 {
-  "name": "roland-dg-brasil-flow",
+  "name": "roland-dg-brasil-flow-premium",
   "version": "1.0.0",
-  "description": "Fluxo de solicitações Roland DG Brasil",
+  "description": "Roland DG Brasil Flow Premium",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

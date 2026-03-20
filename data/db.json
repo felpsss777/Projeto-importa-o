@@ -49,7 +49,7 @@
       "description": "Insumo para produção com estoque crítico.",
       "category": "Consumíveis",
       "quantityRequested": 10,
-      "quantityApproved": 10,
+      "quantityApproved": 5,
       "urgency": "Alta",
       "justification": "Reposição para manter produção da semana.",
       "desiredDate": "2026-03-30",
@@ -63,16 +63,8 @@
       "approverComment": "Pedido coerente com a operação.",
       "importComment": "Negociação concluída com aprovação parcial.",
       "createdAt": "2026-03-19T14:10:00.000Z",
-      "updatedAt": "2026-03-20T17:22:21.334Z",
+      "updatedAt": "2026-03-20T08:45:00.000Z",
       "history": [
-        {
-          "id": 1774027341333,
-          "at": "2026-03-20T17:22:21.333Z",
-          "by": "Equipe Importação",
-          "role": "Importação Master",
-          "action": "Importação atualizou para \"Aprovado parcialmente\"",
-          "detail": "Japão liberou apenas parte do lote nesta janela. Quantidade final: 10."
-        },
         {
           "id": 101,
           "at": "2026-03-20T08:45:00.000Z",
