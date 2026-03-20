@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Roland DG Brasil Flow</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div id="toast" class="toast"></div>
+
+  <section id="loginView" class="login-shell">
+    <div class="login-box">
+      <div class="login-brand">
+        <div class="brand">
+          <div class="brand-badge">R</div>
+          <div>
+            <h1>Roland DG<br>Brasil Flow</h1>
+            <small>Solicitações, aprovação e importação em um só lugar.</small>
+          </div>
+        </div>
+        <p>Um app com visual moderno, protegido por senha, com trilha de aprovação, decisão final da importação e um painel dedicado para TI administrar acessos.</p>
+        <div class="chips">
+          <div class="chip">Fluxo interativo</div>
+          <div class="chip">Aprovação por perfil</div>
+          <div class="chip">TI Admin</div>
+          <div class="chip">Rastreabilidade</div>
+        </div>
+      </div>
+
+      <div class="login-form">
+        <h2>Entrar</h2>
+        <p class="muted">Use um dos acessos de teste para explorar cada perfil.</p>
+        <form id="loginForm" class="form-grid">
+          <div class="field full">
+            <label>E-mail</label>
+            <input id="email" type="email" required placeholder="seuemail@rolanddg.com">
+          </div>
+          <div class="field full">
+            <label>Senha</label>
+            <input id="password" type="password" required placeholder="••••••••">
+          </div>
+          <div class="actions">
+            <button class="btn-primary" type="submit">Acessar sistema</button>
+          </div>
+        </form>
+
+        <div class="demo-box">
+          <strong>Acessos de teste</strong><br><br>
+          TI: ti@rolanddg.com / ti1234<br>
+          Solicitante: solicitante@rolanddg.com / user1234<br>
+          Aprovador: gestor@rolanddg.com / gestor1234<br>
+          Importação: importacao@rolanddg.com / import1234
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="appView" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-badge">R</div>
+        <div>
+          <h1>Roland DG Brasil Flow</h1>
+          <small>Compras e importação</small>
+        </div>
+      </div>
+
+      <div class="user-card">
+        <div class="label">Usuário conectado</div>
+        <h3 id="sidebarUserName">-</h3>
+        <p id="sidebarUserRole">-</p>
+      </div>
+
+      <div id="navArea"></div>
+      <button class="logout-btn" onclick="doLogout()">Sair</button>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="hero">
+          <h2 id="heroTitle">Bem-vindo</h2>
+          <p id="heroSubtitle">Painel principal.</p>
+          <div class="grid-cards">
+            <div class="stat-card"><div class="k">Total</div><div class="v" id="statTotal">0</div></div>
+            <div class="stat-card"><div class="k">Pendentes</div><div class="v" id="statPendentes">0</div></div>
+            <div class="stat-card"><div class="k">Aprovadas</div><div class="v" id="statAprovadas">0</div></div>
+            <div class="stat-card"><div class="k">Reprovadas</div><div class="v" id="statReprovadas">0</div></div>
+          </div>
+        </div>
+      </div>
+
+      <section id="viewContainer" class="view"></section>
+    </main>
+  </section>
+
+  <script src="/app.js"></script>
+</body>
+</html>

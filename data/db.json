@@ -1,0 +1,95 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "Felipe TI",
+      "email": "ti@rolanddg.com",
+      "role": "ti",
+      "team": "TI",
+      "passwordHash": "981972098d6712d6c72c8f01b837c303f42037534d0bac688ca4524384584641",
+      "active": true,
+      "createdAt": "2026-03-20T10:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "name": "João Solicitante",
+      "email": "solicitante@rolanddg.com",
+      "role": "requester",
+      "team": "Vendas",
+      "passwordHash": "831c237928e6212bedaa4451a514ace3174562f6761f6a157a2fe5082b36e2fb",
+      "active": true,
+      "createdAt": "2026-03-20T10:00:00.000Z"
+    },
+    {
+      "id": 3,
+      "name": "Maria Gestora",
+      "email": "gestor@rolanddg.com",
+      "role": "approver",
+      "team": "Vendas",
+      "passwordHash": "9296a6311eb4ffa42424eddf01b0bf451f776e10e394097d3d441e17990e828e",
+      "active": true,
+      "createdAt": "2026-03-20T10:00:00.000Z"
+    },
+    {
+      "id": 4,
+      "name": "Equipe Importação",
+      "email": "importacao@rolanddg.com",
+      "role": "import",
+      "team": "Importação",
+      "passwordHash": "a45c874cb64e28ee58960250407555838a43923bb201730779c573aa225e3912",
+      "active": true,
+      "createdAt": "2026-03-20T10:00:00.000Z"
+    }
+  ],
+  "requests": [
+    {
+      "id": 1,
+      "title": "Cartucho de tinta UV",
+      "productCode": "RDG-UV-448",
+      "description": "Insumo para produção com estoque crítico.",
+      "category": "Consumíveis",
+      "quantityRequested": 10,
+      "quantityApproved": 10,
+      "urgency": "Alta",
+      "justification": "Reposição para manter produção da semana.",
+      "desiredDate": "2026-03-30",
+      "requesterId": 2,
+      "requesterName": "João Solicitante",
+      "requesterTeam": "Vendas",
+      "approverTeam": "Vendas",
+      "approverName": "Maria Gestora",
+      "status": "Aprovado parcialmente",
+      "importDecision": "Japão liberou apenas parte do lote nesta janela.",
+      "approverComment": "Pedido coerente com a operação.",
+      "importComment": "Negociação concluída com aprovação parcial.",
+      "createdAt": "2026-03-19T14:10:00.000Z",
+      "updatedAt": "2026-03-20T17:22:21.334Z",
+      "history": [
+        {
+          "id": 1774027341333,
+          "at": "2026-03-20T17:22:21.333Z",
+          "by": "Equipe Importação",
+          "role": "Importação Master",
+          "action": "Importação atualizou para \"Aprovado parcialmente\"",
+          "detail": "Japão liberou apenas parte do lote nesta janela. Quantidade final: 10."
+        },
+        {
+          "id": 101,
+          "at": "2026-03-20T08:45:00.000Z",
+          "by": "Equipe Importação",
+          "role": "Importação Master",
+          "action": "Importação atualizou para \"Aprovado parcialmente\"",
+          "detail": "Japão liberou apenas parte do lote nesta janela. Quantidade final: 5."
+        },
+        {
+          "id": 100,
+          "at": "2026-03-19T16:00:00.000Z",
+          "by": "Maria Gestora",
+          "role": "Aprovador",
+          "action": "Aprovado pelo gestor",
+          "detail": "Pedido coerente com a operação."
+        }
+      ]
+    }
+  ]
+}
